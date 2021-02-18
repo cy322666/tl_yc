@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use App\Services\YClients;
 
 class Client extends Model
 {
@@ -32,6 +34,20 @@ class Client extends Model
         ];
 
         return $arrayForModel;
+    }
+
+    public static function getClient()
+    {
+        $arrayForClient = self::buildArrayForModel(Request::capture()->toArray());
+
+        $client = Client::updateOrCreate($arrayForClient);
+
+        $yclient = YClients::getClient($client);
+
+        $client->fill($yclient);
+        $client->save();
+
+        return $client;
     }
 
     public function getRouteKeyName()

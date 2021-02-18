@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\YClients;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class Record extends Model
 {
@@ -57,29 +59,13 @@ class Record extends Model
         return $arrayForModel;
     }
 
-    public static function switchStatus($attendance)
+    public static function getRecord()
     {
-        /*
-         * 2 - Пользователь подтвердил запись,
-         * 1 - Пользователь пришел, услуги оказаны,
-         * 0 - ожидание пользователя,
-         * -1 - пользователь не пришел на визит
-         */
-        switch ($attendance) {
-            case '-1' :
-                $logicAction = 'did_not_come';
-                break;
-            case '0' :
-                $logicAction = 'waiting';
-                break;
-            case '1' :
-                $logicAction = 'came';
-                break;
-            case '2' :
-                $logicAction = 'confirmed';
-                break;
-        }
-        return $logicAction;
+        $arrayForRecord = self::buildArrayForModel(Request::capture()->toArray());
+
+        $record = Record::updateOrCreate($arrayForRecord);
+
+        return $record;
     }
 
     public function client()
@@ -89,9 +75,4 @@ class Record extends Model
     //lead
     //contact
     //client
-
-    public function resolveChildRouteBinding($childType, $value, $field)
-    {
-        // TODO: Implement resolveChildRouteBinding() method.
-    }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\YClients;
+use App\Services\amoCRM;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -13,13 +14,12 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    protected $amoCRM;
+    protected $amoApi;
     protected $YClients;
 
     public function __construct()
     {
-        $this->YClients = new YClients(env('YC_PARTNER_TOKEN'));
-        $this->YClients->getAuth(env('YC_LOGIN'), env('YC_PASSWORD'));
+        $this->amoApi = new amoCRM();
     }
 }
 

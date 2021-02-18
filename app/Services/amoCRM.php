@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Services;
 
+use App\Models\Client;
+use App\Models\Record;
 use Ufee\Amo\Amoapi;
 
 class amoCRM
@@ -20,7 +22,23 @@ class amoCRM
         $this->amoApi = \Ufee\Amo\Oauthapi::getInstance(env('AMO_CLIENT_ID'));
     }
 
-    public function searchContact(Client $client)
+    public function updateOrCreate(Client $client)
+    {
+        if($client->contact_id)
+            $contact = $this->updateContact($client);
+        else {
+            $contact = $this->searchContact($client);
+
+            if(!$contact) $contact = $this->createContact($client);
+
+            $client->contact_id = $contact->id;
+            $client->save();
+        }
+
+        return $contact;
+    }
+
+    private function searchContact(Client $client)
     {
         if($client->phone)
             $contacts = $this->amoApi->contacts()->searchByPhone($client->phone);
@@ -28,7 +46,7 @@ class amoCRM
         if(!$contacts->first() && $client->email)
             $contacts = $this->amoApi->contacts()->searchByEmail($client->email);
 
-        $contact = $contacts->first() ? true : null;//TODO тернарный
+        $contact = $contacts->first() ? $contacts->first() : null;//TODO тернарный
 
         return $contact;
     }
@@ -45,7 +63,7 @@ class amoCRM
         return $lead;
     }
 
-    public function updateLead(Record $record)//TODO массив с полями?
+    public function updateLead(Record $record)
     {
         if($record->lead_id) {
             $lead = $this->amoApi->leads()->find($record->lead_id);//TODO lead_id
@@ -56,7 +74,7 @@ class amoCRM
             return null;
     }
 
-    public function createContact(Client $client)
+    private function createContact(Client $client)
     {
         $contact = $this->amoApi->contacts()->create();
 
@@ -85,7 +103,7 @@ class amoCRM
             return null;
     }
 
-    public function updateContact(Client $client)
+    private function updateContact(Client $client)
     {
         if($client->contact_id) {
             $contact = $this->amoApi->contacts()->find($client->contact_id);
@@ -102,10 +120,10 @@ class amoCRM
     public function createNote(Record $record) :? Amoapi
     {
         if($record->lead_id) {
-            $lead = $this->amoApi->leads()->find($record->lead_id);//TODO lead_id
+            $lead = $this->amoApi->leads()->find($record->lead_id);
 
             $note = $lead->createNote($type = 4);
-            $note->text = '';
+            $note->text = $this->createArrayNoteText($record);
             $note->element_type = 2;
             $note->element_id = $record->lead_id;
             $note->save();
@@ -113,5 +131,20 @@ class amoCRM
             return $note;
         } else
             return null;
+    }
+
+    private function createArrayNoteText(Record $record)
+    {
+        $arrayText = [
+            'Запись в YClients',
+            ' - {событие}',
+            ' - {филиал}',
+            ' - {процедуры}',
+            ' - {дата и время}',
+            ' - {мастер}',
+            ' {комментарий}',
+        ];
+
+        return implode("\n", $arrayText);
     }
 }

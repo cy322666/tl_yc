@@ -2,48 +2,85 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Models\Record;
 use App\Models\Client;
 use Illuminate\Http\Request;
-use App\Services\ServiceYClients;
-use App\Services\ServiceAmoCRM;
 use Illuminate\Support\Facades\Log;
 
 class RecordController extends Controller
 {
-    public function action()
+    public function index(Request $request)
     {
-        //TODO delete??
-        $arrayForClient = Client::buildArrayForModel(Request::capture()->toArray());
+        if(empty($request->post('client')['id'])) exit;
 
-        $client = Client::updateOrCreate($arrayForClient);
+        if($request->post('attendance')) {
 
-        if($client->client_id)
-            $yc_client = $this->YClients->getClient(
-                $client->company_id,
-                $client->client_id,
-                env('YC_USER_TOKEN')
-            );
+            $client = Client::getClient();
+            $record = Record::getRecord();
 
-        $client->fill($yc_client);
-        $client->save();
+            switch ($request->post('attendance')) {
 
-        $arrayForRecord = Record::buildArrayForModel(Request::capture()->toArray());
+                case -1 :
+                    $this->cancel($client, $record);
 
-        $record = Record::updateOrCreate($arrayForRecord);
+                    break;
+                case 0 :
+                    $this->wait($client, $record);
 
-        //поиск контакта
-        //поиск сделок
-        //создание сделки
-        //создание контакта
-        //обновление контакта
-        //обновление сделки
+                    break;
+                case 1 :
+                    $this->came($client, $record);
+
+                    break;
+                case 2 :
+                    $this->confirm($client, $record);
+
+                    break;
+            }
+        }
+
     }
 
-    public function deleteRecord($request)
+    public function wait(Client $client, Record $record)
     {
-        Log::info(__METHOD__);
+        $this->amoApi->updateOrCreate($client);
+    }
 
-        $this->YClients->deleteRecord($request->post());
+    public function confirm(Client $client, Record $record)
+    {
+
+    }
+
+    public function cancel(Client $client, Record $record)
+    {
+
+    }
+
+    public function came(Client $client, Record $record)
+    {
+
+    }
+
+
+
+    public function action()
+    {
+        /*
+         * Работа с контактом - клиентом
+         */
+
+
+        if ($client->contact_id) {
+
+            $contact = $this->amoClient->updateContact($client);
+        } else {
+            $contact = $this->amoClient->searchContact($client);
+
+            if($contact)
+                $contact = $this->amoClient->updateContact($client);
+            else
+                $contact = $this->amoClient->createContact($client);
+        }
     }
 }

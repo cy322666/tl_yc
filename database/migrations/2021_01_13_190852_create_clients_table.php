@@ -25,6 +25,10 @@ class CreateClientsTable extends Migration
             $table->string('success_visits_count')->nullable();
             $table->string('spent')->nullable();
             $table->timestamps();
+
+            $table->index('company_id');
+            $table->index('client_id');
+            $table->index('contact_id');
         });
     }
 

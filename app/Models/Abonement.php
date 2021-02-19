@@ -24,14 +24,9 @@ class Abonement extends Model
     {
         $arrayForClient = self::buildArrayForModel(Request::capture()->toArray());
 
-        $client = Abonement::create($arrayForClient);
+        $abonement = Abonement::create($arrayForClient);
 
-        $yclient = YClients::getClient($client);
-
-        $client->fill($yclient);
-        $client->save();
-
-        return $client;
+        return $abonement;
     }
 
     public static function buildArrayForModel($arrayRequest)

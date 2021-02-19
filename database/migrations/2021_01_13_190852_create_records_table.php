@@ -15,7 +15,6 @@ class CreateRecordsTable extends Migration
     {
         Schema::create('records', function (Blueprint $table) {
             $table->increments('id');
-            $table->timestamps();
             $table->integer('company_id')->nullable();
             $table->integer('record_id')->nullable();
             $table->integer('staff_id')->nullable();
@@ -23,12 +22,21 @@ class CreateRecordsTable extends Migration
             $table->integer('visit_id')->nullable();
             $table->integer('lead_id')->nullable();
             $table->dateTime('datetime')->nullable();
-            $table->string('status')->nullable();
             $table->integer('cost')->nullable();
-            $table->string('attendance')->nullable();
+            $table->integer('attendance')->nullable();
             $table->string('title')->nullable();
             $table->string('comment')->nullable();
+            $table->string('status')->nullable();
             $table->integer('seance_length')->nullable();
+            $table->timestamps();
+
+            $table->index('company_id');
+            $table->index('cost');
+            $table->index('record_id');
+            $table->index('client_id');
+            $table->index('visit_id');
+            $table->index('attendance');
+            $table->index('status');
         });
     }
 

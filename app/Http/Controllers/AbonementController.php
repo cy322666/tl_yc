@@ -4,23 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Abonement;
 use App\Models\Client;
-use App\Models\Record;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AbonementController extends Controller
 {
-
-    //TODO миддлваря на проверку продажи абона
+    //TODO миддлваря на проверку продажи абона/наличие буковок
     public function create(Request $request)
     {
 //        if(strripos($request['data']['good']['title'], 'ДК_') === false &&
 //           strripos($request['data']['good']['title'], 'С_') === false) {
-//
-//            Log::info(__METHOD__.' _ не найдено ДК_ или С_ , название -> '.$request['data']['good']['title']);
-
-            //$this->YClients->createTransaction($request);
-            //TODO контроллер транзакций
+//TODO контроллер транзакций
 
         $client = Client::getClient();
 
@@ -33,9 +27,7 @@ class AbonementController extends Controller
         $this->amoApi->updateLead($abonement);
 
         $this->amoApi->createNoteLead($abonement, 'abonement');
-        /*
-         * Работа со сделкой -  абонементом
-         */
+
             /*
              * При создании сделки с покупкой абонемента нам важно передавать следующие данные:
 Стоимость операции (покупки)  → тянем в поле “бюджет сделки”

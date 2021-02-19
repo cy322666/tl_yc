@@ -12,8 +12,6 @@ class RecordController extends Controller
 {
     public function index(Request $request)
     {
-        if(empty($request->post('client')['id'])) exit;
-
         $client = Client::getClient();
         $record = Record::getRecord();
 

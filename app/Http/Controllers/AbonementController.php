@@ -12,8 +12,6 @@ class AbonementController extends Controller
     //TODO миддлваря на проверку продажи абона/наличие буковок
     public function create(Request $request)
     {
-//        if(strripos($request['data']['good']['title'], 'ДК_') === false &&
-//           strripos($request['data']['good']['title'], 'С_') === false) {
 //TODO контроллер транзакций
 
         $client = Client::getClient();

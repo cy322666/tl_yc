@@ -2,7 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\RecordController;
+use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\AbonementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,10 +18,29 @@ use App\Http\Controllers\RecordController;
 |
 */
 
-/*
- * работа по записи
- */
-Route::post('/record', [RecordController::class, 'index']);
+Route::post('/record', function (Request $request) {
+
+    switch ($request->post('resource')) {
+
+        case 'record' :
+
+            Route::post('/record', [RecordController::class, 'index'])->middleware('CheckClient');
+            break;
+
+        case 'finances_operation' :
+
+            Route::post('/record', [TransactionController::class, 'create'])->middleware('CheckRecord');
+            break;
+
+        case 'goods_operations_sale' :
+
+            Route::post('/record', [AbonementController::class, 'create'])->middleware('CheckAbonement');
+            break;
+    }
+});
+
+
+
 
 /*
  * крон ожидания оплаты

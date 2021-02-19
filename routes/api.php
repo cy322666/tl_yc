@@ -15,7 +15,14 @@ use App\Http\Controllers\RecordController;
 |
 */
 
-//Log::info($request);
-Route::post('/record', [RecordController::class, 'action']);
+/*
+ * работа по записи
+ */
+Route::post('/record', [RecordController::class, 'index']);
+
+/*
+ * крон ожидания оплаты
+ */
+Route::post('/pay', [RecordController::class, 'pay']);
 
 Route::any('/transaction/create', 'TransactionController@createTransaction');

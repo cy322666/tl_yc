@@ -2,67 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\amoCRM;
+use App\Abonement;
 use App\Models\Client;
-use App\Services\ServiceAmoCRM;
-use App\Services\ServiceYClients;
+use App\Models\Record;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AbonementController extends Controller
 {
-    public $amoClient;
 
-    public function __construct()
+    //TODO миддлваря на проверку продажи абона
+    public function create(Request $request)
     {
-        $this->amoClient = new amoCRM();
-    }
-
-    public function createAbonement($request)
-    {
-        Log::info(__METHOD__);
-
-        if(strripos($request['data']['good']['title'], 'ДК_') === false &&
-            strripos($request['data']['good']['title'], 'С_') === false) {
-
-            Log::info(__METHOD__.' _ не найдено ДК_ или С_ , название -> '.$request['data']['good']['title']);
+//        if(strripos($request['data']['good']['title'], 'ДК_') === false &&
+//           strripos($request['data']['good']['title'], 'С_') === false) {
+//
+//            Log::info(__METHOD__.' _ не найдено ДК_ или С_ , название -> '.$request['data']['good']['title']);
 
             //$this->YClients->createTransaction($request);
             //TODO контроллер транзакций
 
-        } else {
-            /*
-         * Работа с контактом - клиентом
+        $client = Client::getClient();
+
+        $abonement = Abonement::getAbonement();
+
+        $this->amoApi->updateOrCreate($client);
+
+        $this->amoApi->createAbonement($client, $abonement);
+
+        $this->amoApi->updateLead($abonement);
+
+        $this->amoApi->createNoteLead($abonement, 'abonement');
+        /*
+         * Работа со сделкой -  абонементом
          */
-            $arrayForClient = Client::buildArrayForModel(Request::capture()->toArray());
-
-            $client = Client::updateOrCreate($arrayForClient);
-
-            if ($client->client_id) {
-
-                $yc_client = $this->YClients->getClient(
-                    $client->company_id,
-                    $client->client_id,
-                    env('YC_USER_TOKEN')
-                );
-                $client->fill($yc_client);
-                $client->save();
-            }
-
-            if ($client->contact_id)
-
-                $contact = $this->amoClient->updateContact($client);
-            else {
-                $contact = $this->amoClient->searchContact($client);
-
-                if($contact)
-                    $contact = $this->amoClient->updateContact($client);
-                else
-                    $contact = $this->amoClient->createContact($client);
-            }
-            /*
-             * Работа со сделкой -  абонементом
-             */
             /*
              * При создании сделки с покупкой абонемента нам важно передавать следующие данные:
 Стоимость операции (покупки)  → тянем в поле “бюджет сделки”
@@ -73,6 +46,5 @@ class AbonementController extends Controller
 Далее, при обновлении фактического баланса абонемента на стороне yc мы должны автоматически обновлять и данное поле.
 
              */
-        }
     }
 }

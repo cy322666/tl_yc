@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Abonement;
 use App\Models\Client;
 use App\Models\Record;
 use Ufee\Amo\Amoapi;
@@ -51,16 +52,60 @@ class amoCRM
         return $contact;
     }
 
-    public function createLead(Record $record)
+    public function createLead(Client $client, Record $record)
     {
-        $lead = $this->amoApi->createLead();
+        $lead = $this->amoApi->leads()->create();
 
-        $lead->name = 'Новая запись в YClients';
+        $lead->name = 'Запись в YClients';
         //$lead->responsible_user_id = $responsible;
-        //$lead->status_id = $array['status'];
+        //TODO кастомные поля
+        $lead->contact_id = $client->contact_id;
+        $lead->status_id = $this->getStatus($record->attendance);
         $lead->save();
 
         return $lead;
+    }
+
+    public function createAbonement(Client $client, Abonement $abonement)
+    {
+        $lead = $this->amoApi->leads()->create();
+
+        $lead->name = 'Абонемент в YClients';
+        //$lead->responsible_user_id = $responsible;
+        //TODO кастомные поля
+        //TODO статус для продажи
+        $lead->contact_id = $client->contact_id;
+        $lead->status_id = 1111;
+        $lead->save();
+
+        return $lead;
+    }
+
+    public function getStatus(int $attendance): int
+    {
+        switch ($attendance) {//TODO актуализировать статусы
+
+            case -1 :
+            case 3 :
+                $status_id = 1;
+
+                break;
+            case 0 :
+            default :
+                $status_id = 1;
+
+                break;
+            case 1 :
+                $status_id = 1;
+
+                break;
+            case 2 :
+                $status_id = 1;
+
+                break;
+        }
+
+        return $status_id;
     }
 
     public function updateLead(Record $record)
@@ -72,6 +117,14 @@ class amoCRM
             $lead->save();
         } else
             return null;
+    }
+
+    public function updateStatus(Record $record, int $status_id)
+    {
+        $lead = $this->amoApi->leads()->find($record->lead_id);
+
+        $lead->status_id = $status_id;
+        $lead->save();
     }
 
     private function createContact(Client $client)
@@ -88,49 +141,78 @@ class amoCRM
 
     public function createTask(Record $record)
     {
-        if($record->lead_id) {
-            $task = $this->amoApi->createTask($type = 1);
+        $task = $this->amoApi->createTask($type = 1);
 
-            $task->text = 'Клиент оставил повторную заявку на сайте';
-            $task->element_type = 2;
-            //$task->responsible_user_id = $record->lead_id->responsible_user_id;
-            $task->complete_till_at = strtotime('tomorrow');
-            $task->element_id = $record->lead_id;
-            $task->save();
+        $task->text = 'Клиент оставил повторную заявку на сайте';
+        $task->element_type = 2;
+        //$task->responsible_user_id = $record->lead_id->responsible_user_id;
+        $task->complete_till_at = strtotime('tomorrow');
+        $task->element_id = $record->lead_id;
+        $task->save();
 
-            return $task;
+        return $task;
+    }
+
+    public function searchOrCreate(Client $client, Record $record)
+    {
+        if(!$record->lead_id) {
+
+            $lead = $this->searchLead($client, 123123);//TODO воронка
+
+            if(!$lead)
+                $this->createLead($client, $record);
+        }
+        //TODO запись ид лида в бд
+    }
+
+    /**
+     * @param Client $client
+     * @param int $pipeline_id
+     * @return null
+     * @throws \Exception
+     *
+     * Поиск сделки в воронке у контакта
+     */
+    private function searchLead(Client $client, int $pipeline_id)
+    {
+        $contact = $this->amoApi->contacts()->find($client->contact_id);
+
+        $leads = $contact->leads;
+
+        if($leads) {
+            foreach ($leads as $lead) {
+
+                if ($lead->pipeline_id == $pipeline_id)
+                    return $lead;
+            }
         } else
             return null;
     }
 
     private function updateContact(Client $client)
     {
-        if($client->contact_id) {
-            $contact = $this->amoApi->contacts()->find($client->contact_id);
+        $contact = $this->amoApi->contacts()->find($client->contact_id);
 
-            $contact->cf('Телефон')->setValue($client->phone, 'Home');
-            $contact->cf('Email')->setValue($client->email);
-            $contact->save();
+        $contact->cf('Телефон')->setValue($client->phone, 'Work');
+        $contact->cf('Email')->setValue($client->email);
+        $contact->save();
 
-            return $contact;
-        } else
-            return null;
+        return $contact;
     }
 
-    public function createNote(Record $record) :? Amoapi
+    //TODO текст по евенту
+    public function createNoteLead(Record $record, string $event) :? Amoapi
     {
-        if($record->lead_id) {
-            $lead = $this->amoApi->leads()->find($record->lead_id);
+        $lead = $this->amoApi->leads()->find($record->lead_id);
 
-            $note = $lead->createNote($type = 4);
-            $note->text = $this->createArrayNoteText($record);
-            $note->element_type = 2;
-            $note->element_id = $record->lead_id;
-            $note->save();
+        $note = $lead->createNote($type = 4);
 
-            return $note;
-        } else
-            return null;
+        $note->text = $this->createArrayNoteText($record);
+        $note->element_type = 2;
+        $note->element_id = $record->lead_id;
+        $note->save();
+
+        return $note;
     }
 
     private function createArrayNoteText(Record $record)

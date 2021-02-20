@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Abonement;
+use App\Models\Abonement;
 use App\Models\Client;
 use App\Models\Record;
-use Ufee\Amo\Amoapi;
+use Ufee\Amo\Oauthapi;
 
 class amoCRM
 {
@@ -19,21 +19,24 @@ class amoCRM
             'client_secret' => env('AMO_CLIENT_SECRET'),
             'redirect_uri' => env('AMO_REDIRECT_URL'),
         ]);
-        //$oauth = $amoCRM->fetchAccessToken(env('AMO_AUTH_CODE'));
-        $this->amoApi = \Ufee\Amo\Oauthapi::getInstance(env('AMO_CLIENT_ID'));
+        //$oauth = $this->amoApi->fetchAccessToken(env('AMO_AUTH_CODE'));
+        $this->amoApi = Oauthapi::getInstance(env('AMO_CLIENT_ID'));
+
+        $this->amoApi->queries->cachePath(storage_path('cache/amocrm'));
+        $this->amoApi->queries->logs(storage_path('logs/amocrm'));
+
+        $this->amoApi->queries->setDelay(0.5);
     }
 
     public function updateOrCreate(Client $client)
     {
         if($client->contact_id)
+
             $contact = $this->updateContact($client);
         else {
             $contact = $this->searchContact($client);
 
             if(!$contact) $contact = $this->createContact($client);
-
-            $client->contact_id = $contact->id;
-            $client->save();
         }
 
         return $contact;
@@ -49,6 +52,9 @@ class amoCRM
 
         $contact = $contacts->first() ? $contacts->first() : null;//TODO тернарный
 
+        $client->contact_id = $contact->id;
+        $client->save();
+
         return $contact;
     }
 
@@ -59,9 +65,12 @@ class amoCRM
         $lead->name = 'Запись в YClients';
         //$lead->responsible_user_id = $responsible;
         //TODO кастомные поля
-        $lead->contact_id = $client->contact_id;
-        $lead->status_id = $this->getStatus($record->attendance);
+        $lead->contacts_id = $client->contact_id;
+        $lead->status_id = Record::getStatus($record->attendance)['id'];
         $lead->save();
+
+        $record->lead_id = $lead->id;
+        $record->save();
 
         return $lead;
     }
@@ -74,47 +83,26 @@ class amoCRM
         //$lead->responsible_user_id = $responsible;
         //TODO кастомные поля
         //TODO статус для продажи
-        $lead->contact_id = $client->contact_id;
-        $lead->status_id = 1111;
+        $lead->contacts_id = $client->contact_id;
+        $lead->status_id = env('STATUS_ABONEMENT');
         $lead->save();
 
-        return $lead;
-    }
+        $abonement->lead_id;
+        $abonement->save();
 
-    public function getStatus(int $attendance): int
-    {
-        switch ($attendance) {//TODO актуализировать статусы
-
-            case -1 :
-            case 3 :
-                $status_id = 1;
-
-                break;
-            case 0 :
-            default :
-                $status_id = 1;
-
-                break;
-            case 1 :
-                $status_id = 1;
-
-                break;
-            case 2 :
-                $status_id = 1;
-
-                break;
-        }
-
-        return $status_id;
+        return $abonement;
     }
 
     public function updateLead(Record $record)
     {
         if($record->lead_id) {
-            $lead = $this->amoApi->leads()->find($record->lead_id);//TODO lead_id
 
-            $lead->status_id = 123;
+            $lead = $this->amoApi->leads()->find($record->lead_id);
+
+            //TODO body?
+
             $lead->save();
+
         } else
             return null;
     }
@@ -131,10 +119,14 @@ class amoCRM
     {
         $contact = $this->amoApi->contacts()->create();
 
+        $contact->name = $client->name;
         $contact->cf('Email')->setValue($client->email);
         $contact->cf('Телефон')->setValue($client->phone, 'Home');
-        $contact->name = $client->name;
+
         $contact->save();
+
+        $client->contact_id = $contact->id;
+        $client->save();
 
         return $contact;
     }
@@ -157,12 +149,16 @@ class amoCRM
     {
         if(!$record->lead_id) {
 
-            $lead = $this->searchLead($client, 123123);//TODO воронка
+            $lead = $this->searchLead($client, env('FIRST_PIPELINE'));
 
             if(!$lead)
                 $this->createLead($client, $record);
         }
-        //TODO запись ид лида в бд
+
+        $record->lead_id;
+        $record->save();
+
+        return $lead;
     }
 
     /**
@@ -182,8 +178,7 @@ class amoCRM
         if($leads) {
             foreach ($leads as $lead) {
 
-                if ($lead->pipeline_id == $pipeline_id)
-                    return $lead;
+                if ($lead->pipeline_id == $pipeline_id) return $lead;
             }
         } else
             return null;
@@ -200,8 +195,13 @@ class amoCRM
         return $contact;
     }
 
+    public function updateCustomFields(Record $record)
+    {
+
+    }
+
     //TODO текст по евенту
-    public function createNoteLead(Record $record, string $event) :? Amoapi
+    public function createNoteLead(Record $record, string $event)
     {
         $lead = $this->amoApi->leads()->find($record->lead_id);
 

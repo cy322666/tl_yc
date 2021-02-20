@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Models\Record;
 use App\Models\Client;
 use Illuminate\Http\Request;
@@ -10,35 +9,27 @@ use Illuminate\Support\Facades\Log;
 
 class RecordController extends Controller
 {
+    private $array_status = [];
+
     public function index(Request $request)
     {
         $client = Client::getClient();
         $record = Record::getRecord();
+//TODO если attendance равен тому шо в бд, то это обновление
+        $requestArray = $request->toArray();
 
-        if($request->post('status') == 'delete') $this->delete($client, $record);
+        if($requestArray['status'] == 'delete') $status = 3;
 
-        if($request->post('attendance')) {
+        if($requestArray['data']['attendance']) {
 
-            switch ($request->post('attendance')) {
-
-                case -1 :
-                    $this->cancel($client, $record);
-
-                    break;
-                case 0 :
-                    $this->wait($client, $record);
-
-                    break;
-                case 1 :
-                    $this->came($client, $record);
-
-                    break;
-                case 2 :
-                    $this->confirm($client, $record);
-
-                    break;
-            }
+            $status = $requestArray['data']['attendance'];
         }
+        $status = 0;//TODO ???
+        $this->array_status = Record::getStatus($status);
+
+        $action = $this->array_status['action'];
+
+        $this->$action($client, $record);
     }
 
     public function wait(Client $client, Record $record)
@@ -46,8 +37,6 @@ class RecordController extends Controller
         $this->amoApi->updateOrCreate($client);
 
         $this->amoApi->searchOrCreate($client, $record);
-
-        $this->amoApi->updateStatus($record, $this->amoApi->getStatus($record->attendance));
 
         $this->amoApi->updateLead($record);
 
@@ -60,7 +49,7 @@ class RecordController extends Controller
 
         $this->amoApi->searchOrCreate($client, $record);
 
-        $this->amoApi->updateStatus($record, $this->amoApi->getStatus($record->attendance));
+        $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->updateLead($record);
 
@@ -80,7 +69,7 @@ class RecordController extends Controller
 
         $this->amoApi->searchOrCreate($client, $record);
 
-        $this->amoApi->updateStatus($record, $this->amoApi->getStatus($record->attendance));
+        $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->updateLead($record);
 
@@ -111,7 +100,7 @@ class RecordController extends Controller
 
         $this->amoApi->searchOrCreate($client, $record);
 
-        $this->amoApi->updateStatus($record, $this->amoApi->getStatus($record->attendance));
+        $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->updateLead($record);
         //TODO статус -> wait

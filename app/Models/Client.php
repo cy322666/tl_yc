@@ -8,6 +8,7 @@ use App\Services\YClients;
 
 class Client extends Model
 {
+    protected $primaryKey = 'client_id';
     protected $guarded  = [];
     protected $fillable = [
         'client_id',
@@ -40,7 +41,12 @@ class Client extends Model
     {
         $arrayForClient = self::buildArrayForModel(Request::capture()->toArray());
 
-        $client = Client::updateOrCreate($arrayForClient);
+        $client = Client::find($arrayForClient['client_id']);
+
+        if(!$client)
+            $client = Client::create($arrayForClient);
+        else
+            $client->fill($arrayForClient);
 
         $yclient = YClients::getClient($client);
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class Abonement extends Model
 {
+    protected $primaryKey = 'abonement_id';
     protected $fillable = [
         'abonement_id',
         'company_id',

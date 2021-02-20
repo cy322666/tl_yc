@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 
 class Record extends Model
 {
+    protected $primaryKey = 'record_id';
     protected $guarded  = [];
     protected $fillable = [
         'record_id',
@@ -53,17 +54,74 @@ class Record extends Model
             'comment' => $arrayRequest['data']['comment'],
             'seance_length' => $arrayRequest['data']['length'],
             'attendance' => $arrayRequest['data']['attendance'],
-            'status' => Record::switchStatus($arrayRequest['data']['attendance']),
+            'status' => self::getStatus($arrayRequest['data']['attendance'])['name'],
         ];
 
         return $arrayForModel;
+    }
+
+    public static function getStatus(int $attendance): array
+    {
+        switch ($attendance) {//TODO актуализировать статусы
+            /*
+             * 3 - Запись удалена,
+             * 2 - Пользователь подтвердил запись,
+             * 1 - Пользователь пришел, услуги оказаны,
+             * 0 - Оожидание пользователя,
+             * -1 - Пользователь не пришел на визит
+             */
+            case -1 :
+                $status_name = 'did_not_come';
+                $action = 'cancel';
+                $status_id = env('STATUS_CANCEL');
+                break;
+
+            case 0 :
+                $status_name = 'waiting';
+                $action = 'wait';
+                $status_id = env('STATUS_WAIT');
+                break;
+
+            case 1 :
+                $status_name = 'came';
+                $action = 'came';
+                $status_id = env('STATUS_CAME');
+                break;
+
+            case 2 :
+                $status_name = 'confirmed';
+                $action = 'confirm';
+                $status_id = env('STATUS_CONFIRM');
+                break;
+
+            case 3 :
+                $status_name = 'delete';
+                $action = 'delete';
+                $status_id = env('STATUS_DELETE');
+                break;
+        }
+
+        return [
+            'id' => $status_id,
+            'name' => $status_name,
+            'action' => $action,
+        ];
     }
 
     public static function getRecord()
     {
         $arrayForRecord = self::buildArrayForModel(Request::capture()->toArray());
 
-        $record = Record::updateOrCreate($arrayForRecord);
+        $record = Record::find($arrayForRecord['record_id']);
+
+        if(!$record)
+
+            $record = Record::create($arrayForRecord);
+        else
+            $record->fill($arrayForRecord);
+
+        $record->status = Record::getStatus($arrayForRecord['attendance'])['id'];
+        $record->save();
 
         return $record;
     }

@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Redirect;
 
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\TransactionController;
@@ -18,33 +19,42 @@ use App\Http\Controllers\AbonementController;
 |
 */
 
+/*
+ * все уведомления от yclients
+ */
 Route::post('/record', function (Request $request) {
 
-    switch ($request->post('resource')) {
+    switch ($request->post('resource')) {//TODO в одну строку
 
         case 'record' :
+            //return Route::post('/record/index')->middleware('client');
+            //return Redirect::route('record')->withInput(Request::capture()->post());
+            return app('App\Http\Controllers\RecordController')->index($request);//->middleware('client'); //Call to a member function middleware()
 
-            Route::post('/record', [RecordController::class, 'index'])->middleware('CheckClient');
-            break;
 
         case 'finances_operation' :
 
-            Route::post('/record', [TransactionController::class, 'create'])->middleware('CheckRecord');
-            break;
+            return Redirect::route('transaction');
 
         case 'goods_operations_sale' :
 
-            Route::post('/record', [AbonementController::class, 'create'])->middleware('CheckAbonement');
-            break;
+            return Redirect::route('abonement');
     }
 });
 
+Route::any('/record/index', 'App\Http\Controllers\RecordController@index')
+    ->name('record')
+    ->middleware('client');
 
+Route::get('/transaction/create', [TransactionController::class, 'create'])
+    ->name('transaction')
+    ->middleware('record');
 
+Route::get('/abonement/create', [AbonementController::class, 'create'])
+    ->name('abonement')
+    ->middleware('abonement');
 
 /*
  * крон ожидания оплаты
  */
 Route::post('/pay', [RecordController::class, 'pay']);
-
-Route::any('/transaction/create', 'TransactionController@createTransaction');

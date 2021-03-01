@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Abonement;
+use App\Models\Abonement;
 use App\Models\Client;
+use App\Services\YClients;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -12,19 +13,30 @@ class AbonementController extends Controller
     //TODO миддлваря на проверку продажи абона/наличие буковок
     public function create(Request $request)
     {
-//TODO контроллер транзакций
+        $request = $request::capture()->toArray();
 
-        $client = Client::getClient();
+        if(strripos($request['data']['good']['title'], 'ДК_') !== false ||
+           strripos($request['data']['good']['title'], 'С_') !== false) {
 
-        $abonement = Abonement::getAbonement();
+//            $client = Client::getClient();
+//
+//            $contact = $this->amoApi->updateOrCreate($client);
+//
+//            $client->contact_id = $contact->id;
+            $abonements = YClients::getAbonements(Client::where('client_id', 73168632)->first());
 
-        $this->amoApi->updateOrCreate($client);
+            dd($abonements);
+            $abonement = Abonement::getAbonement();
 
-        $this->amoApi->createAbonement($client, $abonement);
+            $contact = $this->amoApi->updateOrCreate($client);
 
-        $this->amoApi->updateLead($abonement);
+            $this->amoApi->createAbonement($client, $abonement);
 
-        $this->amoApi->createNoteLead($abonement, 'abonement');
+            $this->amoApi->updateLead($abonement);
+
+            $this->amoApi->createNoteLeadAbonement($abonement);
+        }
+
 
             /*
              * При создании сделки с покупкой абонемента нам важно передавать следующие данные:

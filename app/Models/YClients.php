@@ -459,6 +459,44 @@ class YClients
             $userToken ?: true);
     }
 
+    //?{phone}&{company_id}
+    public function getUserAbonements($company_id, $phone,  $userToken = null)
+    {
+        if (!$userToken) {
+            trigger_error('getUserAbonements() expected Argument userToken required', E_USER_WARNING);
+        }//TODO!!!!!!
+
+        $headers[] = 'Content-Type: application/json';
+        $headers[] = 'Authorization: Bearer ' . $this->tokenPartner . (is_string($userToken) ? ', User ' . $userToken : '');
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, 'https://api.yclients.com/api/v1/user/loyalty/abonements/?79996373955&28103');
+        curl_setopt($ch, CURLOPT_FAILONERROR, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        //curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+
+        if (count($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
+
+        $response = curl_exec($ch);
+
+        $errno = curl_errno($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($errno) {
+            print_r($errno);
+            //throw new YclientsException('Запрос произвести не удалось: ' . $error, $errno);
+        }
+
+        return json_decode($response, true);
+    }
+
     /**
      * Удалить записи пользователя
      *
@@ -1500,6 +1538,7 @@ class YClients
         curl_close($ch);
 
         if ($errno) {
+            print_r($errno);
             //throw new YclientsException('Запрос произвести не удалось: ' . $error, $errno);
         }
 

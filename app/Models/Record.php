@@ -27,6 +27,57 @@ class Record extends Model
         'lead_id',
     ];
 
+    /*
+     * 2 - Пользователь подтвердил запись,
+     * 1 - Пользователь пришел, услуги оказаны,
+     * 0 - Оожидание пользователя,
+     * -1 - Пользователь не пришел на визит
+     */
+    public static function getEvent(int $attendance) :? string
+    {
+        switch ($attendance) {
+
+            case -1 :
+                return 'Клиент не пришел';
+
+            case 0 :
+                return 'Клиент записан';
+
+            case 1 :
+                return 'Клиент пришел';
+
+            case 2 :
+                return 'Клиент подтвердил';
+        }
+    }
+
+    public static function getFilial(int $company_id) :? string
+    {
+        switch ($company_id) {
+
+            case '28103'://москва
+            case '1021063':
+
+                return 'Москва';
+
+            case '119809'://ярославль
+            case '1021067':
+
+                return 'Ярославль';
+
+            case '119834'://рыбинск
+            case '1021065':
+
+                return 'Рыбинск';
+
+            case '1121147'://машкова
+            case '274576':
+
+                return 'Москва Машкова';
+        }
+        return null;
+    }
+
     public static function buildArrayForModel($arrayRequest)
     {
         $stringServices = '';
@@ -39,7 +90,7 @@ class Record extends Model
                 $stringServices .= $array['title'].' |';
                 $costSumm += $array['cost'];
             }
-            //$stringServices = trim(' |', $stringServices);
+            $stringServices = trim($stringServices, ' |', );
         }
 
         $arrayForModel = [
@@ -54,7 +105,7 @@ class Record extends Model
             'comment' => $arrayRequest['data']['comment'],
             'seance_length' => $arrayRequest['data']['length'],
             'attendance' => $arrayRequest['data']['attendance'],
-            'status' => self::getStatus($arrayRequest['data']['attendance'])['name'],
+            'status' => 'no_pay',
         ];
 
         return $arrayForModel;
@@ -77,6 +128,7 @@ class Record extends Model
                 break;
 
             case 0 :
+            default:
                 $status_name = 'waiting';
                 $action = 'wait';
                 $status_id = env('STATUS_WAIT');
@@ -102,7 +154,7 @@ class Record extends Model
         }
 
         return [
-            'id' => $status_id,
+            'status_id' => $status_id,
             'name' => $status_name,
             'action' => $action,
         ];
@@ -120,15 +172,12 @@ class Record extends Model
         else
             $record->fill($arrayForRecord);
 
-        $record->status = Record::getStatus($arrayForRecord['attendance'])['id'];
-        $record->save();
-
         return $record;
     }
 
     public function client()
     {
-        return $this->belongsTo('App\Client');
+        return $this->belongsTo('App\Models\Client');
     }
     //lead
     //contact

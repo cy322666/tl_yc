@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Transaction;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -14,8 +14,14 @@ class TransactionController extends Controller
 
         $record = $transaction->record;
 
-        $this->amoApi->updateStatus($record, 1);
+        if($record) {
 
-        $this->amoApi->createNoteLead($record, 'came');
+            $this->amoApi->updateStatus($record, env('STATUS_CAME'));
+
+            $this->amoApi->createNoteLeadTransaction($transaction, $record);
+
+            $record->status = 'payed';
+            $record->save();
+        }
     }
 }

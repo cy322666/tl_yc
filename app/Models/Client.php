@@ -25,14 +25,19 @@ class Client extends Model
 
     public static function buildArrayForModel($arrayRequest)
     {
+
         $arrayForModel = [
             'company_id' => $arrayRequest['company_id'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'name' => $arrayRequest['data']['client']['name'],
             'phone' => $arrayRequest['data']['client']['phone'],
-            'email' => $arrayRequest['data']['client']['email'],
-            'success_visits_count' => $arrayRequest['data']['client']['success_visits_count'],
         ];
+
+        if(!empty($arrayRequest['data']['client']['email']))
+            array_merge($arrayForModel, ['email' => $arrayRequest['data']['client']['email']]);
+
+        if(!empty($arrayRequest['data']['client']['success_visits_count']))
+            array_merge($arrayForModel, ['success_visits_count' => $arrayRequest['data']['client']['success_visits_count']]);
 
         return $arrayForModel;
     }
@@ -63,7 +68,7 @@ class Client extends Model
 
     public function records()
     {
-        return $this->hasMany('App\Record');
+        return $this->hasMany('App\Models\Record');
     }
 }
 

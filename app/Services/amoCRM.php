@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Abonement;
 use App\Models\Client;
 use App\Models\Record;
+use App\Models\Transaction;
 use Ufee\Amo\Oauthapi;
 
 class amoCRM
@@ -36,7 +37,8 @@ class amoCRM
         else {
             $contact = $this->searchContact($client);
 
-            if(!$contact) $contact = $this->createContact($client);
+            if(!$contact)
+                $contact = $this->createContact($client);
         }
 
         return $contact;
@@ -52,9 +54,6 @@ class amoCRM
 
         $contact = $contacts->first() ? $contacts->first() : null;//TODO тернарный
 
-        $client->contact_id = $contact->id;
-        $client->save();
-
         return $contact;
     }
 
@@ -63,14 +62,10 @@ class amoCRM
         $lead = $this->amoApi->leads()->create();
 
         $lead->name = 'Запись в YClients';
-        //$lead->responsible_user_id = $responsible;
-        //TODO кастомные поля
-        $lead->contacts_id = $client->contact_id;
-        $lead->status_id = Record::getStatus($record->attendance)['id'];
-        $lead->save();
 
-        $record->lead_id = $lead->id;
-        $record->save();
+        $lead->contacts_id = $client->contact_id;
+        $lead->status_id = Record::getStatus($record->attendance)['status_id'];
+        $lead->save();
 
         return $lead;
     }
@@ -80,17 +75,31 @@ class amoCRM
         $lead = $this->amoApi->leads()->create();
 
         $lead->name = 'Абонемент в YClients';
-        //$lead->responsible_user_id = $responsible;
-        //TODO кастомные поля
-        //TODO статус для продажи
+
         $lead->contacts_id = $client->contact_id;
         $lead->status_id = env('STATUS_ABONEMENT');
         $lead->save();
 
-        $abonement->lead_id;
-        $abonement->save();
+        return $lead;
+    }
 
-        return $abonement;
+    public function updateLeadAbonement(Abonement $abonement)
+    {
+        if($abonement->lead_id) {
+
+            $lead = $this->amoApi->leads()->find($abonement->lead_id);
+
+            $lead->sale = $abonement->cost;
+
+            $lead->cf('Салон')->setValue(Record::getFilial($abonement->company_id));
+
+
+            $lead->save();
+
+            return $lead;
+
+        } else
+            return null;
     }
 
     public function updateLead(Record $record)
@@ -99,9 +108,16 @@ class amoCRM
 
             $lead = $this->amoApi->leads()->find($record->lead_id);
 
-            //TODO body?
+            $lead->sale = $record->cost;
 
+            $lead->cf('Салон')->setValue(Record::getFilial($record->company_id));
+            $lead->cf('ID записи, Yclients')->setValue($record->record_id);
+            $lead->cf('Дата и время записи, YClients')->setValue($record->datetime);
+
+            //TODO fields
             $lead->save();
+
+            return $lead;
 
         } else
             return null;
@@ -113,6 +129,8 @@ class amoCRM
 
         $lead->status_id = $status_id;
         $lead->save();
+
+        return $lead;
     }
 
     private function createContact(Client $client)
@@ -149,14 +167,12 @@ class amoCRM
     {
         if(!$record->lead_id) {
 
-            $lead = $this->searchLead($client, env('FIRST_PIPELINE'));
+            $lead = $this->searchLead($client, env('FIRST_PIPELINE')); //TODO поиск по 1 воронке?
 
             if(!$lead)
-                $this->createLead($client, $record);
-        }
-
-        $record->lead_id;
-        $record->save();
+                $lead = $this->createLead($client, $record);
+        } else
+            $lead = $this->amoApi->leads()->find($record->lead_id);
 
         return $lead;
     }
@@ -176,9 +192,11 @@ class amoCRM
         $leads = $contact->leads;
 
         if($leads) {
-            foreach ($leads as $lead) {
+            foreach ($leads->toArray() as $arrayLead) {
 
-                if ($lead->pipeline_id == $pipeline_id) return $lead;
+                if ($arrayLead['pipeline_id'] == $pipeline_id)
+
+                    return $this->amoApi->leads()->find($arrayLead['id']);
             }
         } else
             return null;
@@ -195,12 +213,32 @@ class amoCRM
         return $contact;
     }
 
-    public function updateCustomFields(Record $record)
+    public function createNoteLeadTransaction(Transaction $transaction, Record $record)
     {
+        $lead = $this->amoApi->leads()->find($record->lead_id);
 
+        $note = $lead->createNote($type = 4);
+
+        $note->text = self::createArrayNoteTextAbonement($transaction, $record);
+        $note->element_type = 2;
+        $note->element_id = $record->lead_id;
+        $note->save();
+
+        return $note;
     }
 
-    //TODO текст по евенту
+    private function createArrayNoteTextAbonement(Transaction $transaction, Record $record)
+    {
+        $arrayText = [
+            ' - Событие : Оплачена запись № '.$record->record_id,
+            ' - Филиал : '.Record::getFilial($record->company_id),
+            ' - Стоимость : '.$transaction->amount. ' p.',
+            ' Комментарий : '.$transaction->comment,
+        ];
+
+        return implode("\n", $arrayText);
+    }
+
     public function createNoteLead(Record $record, string $event)
     {
         $lead = $this->amoApi->leads()->find($record->lead_id);
@@ -218,15 +256,28 @@ class amoCRM
     private function createArrayNoteText(Record $record)
     {
         $arrayText = [
-            'Запись в YClients',
-            ' - {событие}',
-            ' - {филиал}',
-            ' - {процедуры}',
-            ' - {дата и время}',
+            ' - Событие : '.Record::getEvent($record->attendance),
+            ' - Филиал : '.Record::getFilial($record->company_id),
+            ' - Процедуры : '.$record->title,
+            ' - Дата и Время : '.$record->datetime,
             ' - {мастер}',
-            ' {комментарий}',
+            ' Комментарий : '.$record->comment,
         ];
 
         return implode("\n", $arrayText);
+    }
+
+    public function createNoteLeadDelete(Record $record)
+    {
+        $lead = $this->amoApi->leads()->find($record->lead_id);
+
+        $note = $lead->createNote($type = 4);
+
+        $note->text = 'Запись № '.$record->order_id.' удалена из YClients';
+        $note->element_type = 2;
+        $note->element_id = $record->lead_id;
+        $note->save();
+
+        return $note;
     }
 }

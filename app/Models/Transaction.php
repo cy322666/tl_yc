@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +29,7 @@ class Transaction extends Model
     public static function buildArrayForModel($arrayRequest)
     {
         $arrayForModel = [
-            'record_id'  => $arrayRequest['resource_id'],
+            'record_id'  => $arrayRequest['resource_id'],//TODO transaction_id
             'company_id' => $arrayRequest['company_id'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'visit_id' => $arrayRequest['data']['visit_id'],
@@ -42,11 +42,11 @@ class Transaction extends Model
 
     public function client()
     {
-        return $this->belongsTo('App\Client');
+        return $this->belongsTo('App\Models\Client');
     }
 
     public function record()
     {
-        return $this->belongsTo('App\Record');
+        return $this->belongsTo('App\Models\Record', 'record_id', 'record_id');
     }
 }

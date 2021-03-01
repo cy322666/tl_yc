@@ -22,23 +22,21 @@ use App\Http\Controllers\AbonementController;
 /*
  * все уведомления от yclients
  */
-Route::post('/record', function (Request $request) {
+Route::post('/yclients', function (Request $request) {
 
     switch ($request->post('resource')) {//TODO в одну строку
 
         case 'record' :
-            //return Route::post('/record/index')->middleware('client');
-            //return Redirect::route('record')->withInput(Request::capture()->post());
-            return app('App\Http\Controllers\RecordController')->index($request);//->middleware('client'); //Call to a member function middleware()
 
+            return app('App\Http\Controllers\RecordController')->index($request);
 
         case 'finances_operation' :
 
-            return Redirect::route('transaction');
+            return app('App\Http\Controllers\TransactionController')->create($request);
 
         case 'goods_operations_sale' :
 
-            return Redirect::route('abonement');
+            return app('App\Http\Controllers\AbonementController')->create($request);
     }
 });
 

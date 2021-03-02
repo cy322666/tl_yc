@@ -17,16 +17,19 @@ class AbonementController extends Controller
     {
         $request = $request::capture()->toArray();
 
-        if(strripos($request['data']['good']['title'], 'ДК_') !== false ||
-           strripos($request['data']['good']['title'], 'С_') !== false) {
+        if(Abonement::checkName($request['data']['good']['title'])) {
 
             $client = Client::getClient();
 
             $contact = $this->amoApi->updateOrCreate($client);
 
             $client->contact_id = $contact->id;
-            $abonements = YClients::getAbonements(Client::where('client_id', 73168632)->first());
-dd($abonements);
+
+            /*
+             *
+             *
+             *
+             */
             $abonement = Abonement::getAbonement();
 
             $lead = $this->amoApi->createAbonement($client, $abonement);
@@ -59,38 +62,61 @@ dd($abonements);
     public function pay()
     {
         $records = Record::where('status', 'no_pay')
-            ->where('datetime', '>', date('Y-m-d H:i:s', strtotime("-5 hours")))
-            ->where('datetime', '<', date('Y-m-d H:i:s', strtotime("-6 hours")))
+            ->where('datetime', '>', date('Y-m-d H:i:s', strtotime("-6 hours")))
+            ->where('datetime', '<', date('Y-m-d H:i:s', strtotime("-5 hours")))
             ->get();
-
-        dd($records);
 
         if($records) {
 
             foreach ($records as $record) {
 
-                $datetime5Hours = $now - '5 hours';
-                $datetime6Hours = $now - '6 hours';
+                $client = $record->client;
 
-                if ($record->datetime > $datetime5Hours &&
-                    $record->datetime < $datetime6Hours) {
+                $abonements = YClients::getAbonements($client);
 
-                    //значит это посещение по абонементу
-                    $abonements = $record->abonements;
-                    //TODO запросить все активные абоны юзера и соотнеси к тем, что в бд?
-                    foreach ($abonements as $abonement) {
+                if(!empty($abonements['data'][0])) {
+                    //TODO add field code (number)
+                    //TODO update contact??
+                    foreach ($abonements['data'] as $abonementArray) {
 
-                        if($abonement->is_active = true) {
-                            //TODO add field is_active
+                        if($abonementArray['status']['title'] == 'Активирован' &&
+                           Abonement::checkName($abonementArray['type']['title'])) {
 
+                            $abonementModel = Abonement::firstOrCreate([
+                                'company_id' => $record->company_id,
+                                'abonement_id' => $abonementArray['id'],
+                                'title' => $abonementArray['type']['title'],
+                                'client_id' => $client->client_id,
+                                'cost' => $abonementArray['default_balance'],
+                                'sale' => Abonement::getSaleByTitle($abonementArray['type']['title']),
+                            ]);
 
-                            if($abonement->amount <= 5000)
+                            if(!$abonementModel->lead_id)
 
-                                $this->amoApi->updateStatus($record, env('STATUS_FINISH'));
-                                //TODO status abonement is_active = false?
+                                $lead = $this->amoApi->createAbonement($client, $abonementModel);
+
+                                $abonementModel->lead_id = $lead->id;
+                                $abonementModel->save();
+                            }
+
+                            if($abonementModel->amount > $abonementArray['balance']) {
+
+                                //посещение по этому абону
+                                //выполняем действия
+                                //$abon->balance = $abonementArray['balance'];
+                                //конфликт с созданием сделки
+                            }
+
+                            $lead = $this->amoApi->updateLeadAbonement($abonementModel);
+
+                            //$this->amoApi->createNoteLeadAbonement($abonementModel);
+                            //TODO не подходит примечание
                         }
                     }
-                }
+                    if($abonementModel->amount <= 5000)
+
+                        $this->amoApi->updateStatus($record, env('STATUS_FINISH'));
+                    //TODO status abonement is_active = false?
             }
         }
     }

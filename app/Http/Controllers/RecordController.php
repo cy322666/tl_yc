@@ -28,7 +28,7 @@ class RecordController extends Controller
         else
             $status = $requestArray['data']['attendance'];
 
-        $this->array_status = Record::getStatus($status);
+        $this->array_status = Record::getStatus($status);//TODO че с этим делать
 
         $action = $this->array_status['action'];
 
@@ -53,7 +53,7 @@ class RecordController extends Controller
 
         $this->amoApi->updateLead($record);
 
-        $lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
+        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->createNoteLead($record, 'wait');
 
@@ -73,7 +73,7 @@ class RecordController extends Controller
 
         $this->amoApi->updateLead($record);
 
-        $lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
+        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->createNoteLead($record, 'confirm');
 
@@ -99,7 +99,7 @@ class RecordController extends Controller
 
         $this->amoApi->updateLead($record);
 
-        $lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
+        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->createNoteLead($record, 'cancel');
 
@@ -119,7 +119,7 @@ class RecordController extends Controller
 
         if($record->lead_id) {
 
-            $this->amoApi->updateStatus($record, $this->array_status['status_id']);
+            //$this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
             $this->amoApi->createNoteLeadDelete($record);
         }
@@ -143,7 +143,7 @@ class RecordController extends Controller
 
         $this->amoApi->updateLead($record);
 
-        $lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
+        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
 
         $this->amoApi->createNoteLead($record, 'came');
 

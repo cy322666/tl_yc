@@ -46,6 +46,18 @@ class Abonement extends Model
         return $arrayForModel;
     }
 
+    public static function checkName(string $title) : bool
+    {
+        if (strripos($title, 'ДК_') !== false ||
+            strripos($title, 'С_') !== false) {
+
+            return true;
+
+        } else
+
+            return false;
+    }
+
     public static function getSaleByTitle(string $title) : int
     {
         $str_at = explode('(', $title);

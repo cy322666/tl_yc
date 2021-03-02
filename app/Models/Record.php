@@ -177,7 +177,7 @@ class Record extends Model
 
     public function client()
     {
-        return $this->belongsTo('App\Models\Client');
+        return $this->belongsTo('App\Models\Client', 'client_id', 'client_id');
     }
     //lead
     //contact

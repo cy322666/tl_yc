@@ -128,9 +128,9 @@ class amoCRM
             return null;
     }
 
-    public function updateStatus(Record $record, int $status_id)
+    public function updateStatus($model, int $status_id)
     {
-        $lead = $this->amoApi->leads()->find($record->lead_id);
+        $lead = $this->amoApi->leads()->find($model->lead_id);
 
         $lead->status_id = $status_id;
         $lead->save();
@@ -172,11 +172,29 @@ class amoCRM
     {
         if(!$record->lead_id) {
 
-            $lead = $this->searchLead($client, env('FIRST_PIPELINE')); //TODO поиск по 1 воронке?
+            $lead = $this->searchLead($client, env('FIRST_PIPELINE'));
+
+            if($lead) {
+
+                if($lead->status_id == 142 || $lead->status_id == 143)
+                    //если закрытая в 1 воронке
+                    $lead = $this->createLead($client, $record);//TODO воронка создания?
+
+            } else {
+
+                $lead = $this->searchLead($client, env('SECOND_PIPELINE'));
+
+                if($lead->status_id == 142 || $lead->status_id == 143) {
+                    //если закрытая во 2 воронке
+                    $lead = $this->createLead($client, $record);//TODO воронка создания?
+                }
+            }
 
             if(!$lead)
+
                 $lead = $this->createLead($client, $record);
         } else
+
             $lead = $this->amoApi->leads()->find($record->lead_id);
 
         return $lead;

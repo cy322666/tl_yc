@@ -150,16 +150,6 @@ class RecordController extends Controller
         $record->save();
         $client->save();
     }
-
     //TODO миддлваря на проверку нужного филиала
     //TODO миддлваря на проверку события
-    public function pay()
-    {
-//        $records = Record::where('attendance', '1')
-//            ->where('=', 'status', 'wait_pay')//разница в 5 часах
-//            -all();
-        //проверка оплаты у записей
-        //каждый час
-        //отбор по attendance и статус
-    }
 }

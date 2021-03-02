@@ -55,4 +55,4 @@ Route::get('/abonement/create', [AbonementController::class, 'create'])
 /*
  * крон ожидания оплаты
  */
-Route::post('/pay', [RecordController::class, 'pay']);
+Route::post('/abonements/pay', [AbonementController::class, 'pay']);

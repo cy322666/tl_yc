@@ -6,6 +6,7 @@ use App\Models\Abonement;
 use App\Models\Client;
 use App\Models\Record;
 use App\Services\YClients;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -24,8 +25,8 @@ class AbonementController extends Controller
             $contact = $this->amoApi->updateOrCreate($client);
 
             $client->contact_id = $contact->id;
-            //$abonements = YClients::getAbonements(Client::where('client_id', 73168632)->first());
-
+            $abonements = YClients::getAbonements(Client::where('client_id', 73168632)->first());
+dd($abonements);
             $abonement = Abonement::getAbonement();
 
             $lead = $this->amoApi->createAbonement($client, $abonement);
@@ -57,7 +58,12 @@ class AbonementController extends Controller
      */
     public function pay()
     {
-        $records = Record::where('status', 'no_pay')->all();
+        $records = Record::where('status', 'no_pay')
+            ->where('datetime', '>', date('Y-m-d H:i:s', strtotime("-5 hours")))
+            ->where('datetime', '<', date('Y-m-d H:i:s', strtotime("-6 hours")))
+            ->get();
+
+        dd($records);
 
         if($records) {
 
@@ -71,12 +77,17 @@ class AbonementController extends Controller
 
                     //значит это посещение по абонементу
                     $abonements = $record->abonements;
-//TODO запросить все активные абоны юзера и соотнеси к тем, что в бд?
+                    //TODO запросить все активные абоны юзера и соотнеси к тем, что в бд?
                     foreach ($abonements as $abonement) {
 
                         if($abonement->is_active = true) {
                             //TODO add field is_active
 
+
+                            if($abonement->amount <= 5000)
+
+                                $this->amoApi->updateStatus($record, env('STATUS_FINISH'));
+                                //TODO status abonement is_active = false?
                         }
                     }
                 }

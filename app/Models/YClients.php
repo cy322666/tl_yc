@@ -464,14 +464,14 @@ class YClients
     {
         if (!$userToken) {
             trigger_error('getUserAbonements() expected Argument userToken required', E_USER_WARNING);
-        }//TODO!!!!!!
+        }
 
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Authorization: Bearer ' . $this->tokenPartner . (is_string($userToken) ? ', User ' . $userToken : '');
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://api.yclients.com/api/v1/loyalty/certificates/?79996373955&28103');
+        curl_setopt($ch, CURLOPT_URL, 'https://api.yclients.com/api/v1/loyalty/certificates?company_id=28103&phone=79996373955');
         curl_setopt($ch, CURLOPT_FAILONERROR, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);

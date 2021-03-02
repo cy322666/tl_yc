@@ -16,9 +16,9 @@ class Abonement extends Model
         'cost',
         'client_id',
         'comment',
-        'lead_id',
         'cost',//без бонусов
         'sale',//бюджет
+        'amount'//остаток на балансе
     ];
 
     public static function getAbonement()
@@ -33,24 +33,25 @@ class Abonement extends Model
     public static function buildArrayForModel($arrayRequest)
     {
         $arrayForModel = [
-            'record_id'  => $arrayRequest['resource_id'],
+            'record_id'  => $arrayRequest['data']['record_id'],
             'company_id' => $arrayRequest['company_id'],
+            'abonement_id' => $arrayRequest['data']['good']['id'],
             'title' => $arrayRequest['data']['good']['title'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'comment' => $arrayRequest['data']['comment'],
             'cost' => $arrayRequest['data']['cost'],
-            'sale' => self::getSaleByCost($arrayRequest['data']['cost']),
+            'sale' => self::getSaleByTitle($arrayRequest['data']['good']['title']),
         ];
 
         return $arrayForModel;
     }
 
-    public static function getSaleByCost(int $cost) : int
+    public static function getSaleByTitle(string $title) : int
     {
-        $str_at = explode('(', $cost);
+        $str_at = explode('(', $title);
         $str_to = explode(')', $str_at[1]);
 
-        return trim($str_to);
+        return trim($str_to[0]);
     }
 
     public function resolveChildRouteBinding($childType, $value, $field)

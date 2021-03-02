@@ -471,7 +471,7 @@ class YClients
 
         $ch = curl_init();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://api.yclients.com/api/v1/user/loyalty/abonements/?79996373955&28103');
+        curl_setopt($ch, CURLOPT_URL, 'https://api.yclients.com/api/v1/loyalty/certificates/?79996373955&28103');
         curl_setopt($ch, CURLOPT_FAILONERROR, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);

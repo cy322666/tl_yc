@@ -75,9 +75,14 @@ class amoCRM
         $lead = $this->amoApi->leads()->create();
 
         $lead->name = 'Абонемент в YClients';
-
+        $lead->sale = $abonement->sale;
         $lead->contacts_id = $client->contact_id;
         $lead->status_id = env('STATUS_ABONEMENT');
+
+        $lead->cf('Фактический баланс')->setValue($abonement->cost);
+        $lead->cf('Остаток на балансе')->setValue($abonement->cost);
+        $lead->cf('Салон')->setValue(Record::getFilial($abonement->company_id));
+
         $lead->save();
 
         return $lead;
@@ -219,7 +224,7 @@ class amoCRM
 
         $note = $lead->createNote($type = 4);
 
-        $note->text = self::createArrayNoteTextAbonement($transaction, $record);
+        $note->text = self::createArrayNoteTextPay($transaction, $record);
         $note->element_type = 2;
         $note->element_id = $record->lead_id;
         $note->save();
@@ -227,7 +232,7 @@ class amoCRM
         return $note;
     }
 
-    private function createArrayNoteTextAbonement(Transaction $transaction, Record $record)
+    private function createArrayNoteTextPay(Transaction $transaction, Record $record)
     {
         $arrayText = [
             ' - Событие : Оплачена запись № '.$record->record_id,
@@ -279,5 +284,33 @@ class amoCRM
         $note->save();
 
         return $note;
+    }
+
+    public function createNoteLeadAbonement(Abonement $abonement)
+    {
+        $lead = $this->amoApi->leads()->find($abonement->lead_id);
+
+        $note = $lead->createNote($type = 4);
+
+        $note->text = self::createArrayNoteTextAbonement($abonement);
+        $note->element_type = 2;
+        $note->element_id = $abonement->lead_id;
+        $note->save();
+
+        return $note;
+    }
+
+    private function createArrayNoteTextAbonement(Abonement $abonement)
+    {
+        $arrayText = [
+            ' - Событие : Продан абонемент № '.$abonement->abonement_id,
+            ' - Название : '.$abonement->title,
+            ' - Филиал : '.Record::getFilial($abonement->company_id),
+            ' - Стоимость : '.$abonement->sale. ' p.',
+            ' - Со скидкой : '.$abonement->cost. ' p.',
+            ' Комментарий : '.$abonement->comment,
+        ];
+
+        return implode("\n", $arrayText);
     }
 }

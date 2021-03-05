@@ -18,6 +18,7 @@ class CreateRecordsTable extends Migration
             $table->integer('company_id')->nullable();
             $table->integer('record_id')->nullable();
             $table->integer('staff_id')->nullable();
+            $table->string('staff_name')->nullable();
             $table->integer('client_id')->nullable();
             $table->integer('visit_id')->nullable();
             $table->integer('lead_id')->nullable();
@@ -36,6 +37,7 @@ class CreateRecordsTable extends Migration
             $table->index('client_id');
             $table->index('visit_id');
             $table->index('attendance');
+            $table->index('staff_name');
             $table->index('status');
         });
     }

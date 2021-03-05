@@ -39,6 +39,29 @@ class RecordController extends Controller
      * @param Client $client
      * @param Record $record
      *
+     * Пришел по записи
+     */
+    public function came(Client $client, Record $record)
+    {
+        $contact = $this->amoApi->updateOrCreate($client);
+
+        $client->contact_id = $contact->id;
+        $client->save();
+
+        $lead = $this->amoApi->searchOrCreate($client, $record);
+
+        $record->lead_id = $lead->id;
+        $record->save();
+
+        $this->amoApi->updateLead($record);
+
+        $this->amoApi->createNoteLead($record);
+    }
+
+    /**
+     * @param Client $client
+     * @param Record $record
+     *
      * клиент записан
      */
     public function wait(Client $client, Record $record)
@@ -46,19 +69,16 @@ class RecordController extends Controller
         $contact = $this->amoApi->updateOrCreate($client);
 
         $client->contact_id = $contact->id;
+        $client->save();
 
         $lead = $this->amoApi->searchOrCreate($client, $record);
 
         $record->lead_id = $lead->id;
+        $record->save();
 
         $this->amoApi->updateLead($record);
 
-        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
-
-        $this->amoApi->createNoteLead($record, 'wait');
-
-        $record->save();
-        $client->save();
+        $this->amoApi->createNoteLead($record);
     }
 
     public function confirm(Client $client, Record $record)
@@ -66,19 +86,16 @@ class RecordController extends Controller
         $contact = $this->amoApi->updateOrCreate($client);
 
         $client->contact_id = $contact->id;
+        $client->save();
 
         $lead = $this->amoApi->searchOrCreate($client, $record);
 
         $record->lead_id = $lead->id;
+        $record->save();
 
         $this->amoApi->updateLead($record);
 
-        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
-
-        $this->amoApi->createNoteLead($record, 'confirm');
-
-        $record->save();
-        $client->save();
+        $this->amoApi->createNoteLead($record);
     }
 
     /**
@@ -92,19 +109,16 @@ class RecordController extends Controller
         $contact = $this->amoApi->updateOrCreate($client);
 
         $client->contact_id = $contact->id;
+        $client->save();
 
         $lead = $this->amoApi->searchOrCreate($client, $record);
 
-        $record->lead_id = $lead->id;
+        $record->lead_id = intval($lead->id);
+        $record->save();
 
         $this->amoApi->updateLead($record);
 
-        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
-
-        $this->amoApi->createNoteLead($record, 'cancel');
-
-        $record->save();
-        $client->save();
+        $this->amoApi->createNoteLead($record);
     }
 
     /**
@@ -119,37 +133,12 @@ class RecordController extends Controller
 
         if($record->lead_id) {
 
-            //$this->amoApi->updateStatus($record, $this->array_status['status_id']);
+            $lead = $this->amoApi->getLead($record->lead_id);
+
+            $this->amoApi->updateStatus($lead, $this->amoApi::pipelineHelper($lead->pipeline_id, $record));
 
             $this->amoApi->createNoteLeadDelete($record);
         }
     }
-
-    /**
-     * @param Client $client
-     * @param Record $record
-     *
-     * Пришел по записи
-     */
-    public function came(Client $client, Record $record)
-    {
-        $contact = $this->amoApi->updateOrCreate($client);
-
-        $client->contact_id = $contact->id;
-
-        $lead = $this->amoApi->searchOrCreate($client, $record);
-
-        $record->lead_id = $lead->id;
-
-        $this->amoApi->updateLead($record);
-
-        //$lead = $this->amoApi->updateStatus($record, $this->array_status['status_id']);
-
-        $this->amoApi->createNoteLead($record, 'came');
-
-        $record->save();
-        $client->save();
-    }
-    //TODO миддлваря на проверку нужного филиала
     //TODO миддлваря на проверку события
 }

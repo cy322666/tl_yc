@@ -18,7 +18,7 @@ class Client extends Model
         'birth_date',
         'spent',
         'company_id',
-        'success_visits_count',
+        'visits',
         'spent',
         'contact_id',
     ];
@@ -52,6 +52,10 @@ class Client extends Model
             $client = Client::create($arrayForClient);
         else
             $client->fill($arrayForClient);
+
+        //$client->save();
+
+        $client = Client::find($arrayForClient['client_id']);
 
         $yclient = YClients::getClient($client);
 

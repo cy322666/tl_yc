@@ -29,6 +29,12 @@ class amoCRM
         $this->amoApi->queries->setDelay(0.5);
     }
 
+    public function getLead($id)
+    {
+        $lead = $this->amoApi->leads()->find($id);
+
+        return $lead;
+    }
     public function updateOrCreate(Client $client)
     {
         if($client->contact_id)
@@ -57,14 +63,19 @@ class amoCRM
         return $contact;
     }
 
-    public function createLead(Client $client, Record $record)
+    public function createLead(Client $client, Record $record, int $status_id = null)
     {
         $lead = $this->amoApi->leads()->create();
 
         $lead->name = 'Запись в YClients';
 
         $lead->contacts_id = $client->contact_id;
-        $lead->status_id = Record::getStatus($record->attendance)['status_id'];
+
+        if($status_id)
+            $lead->status_id = $status_id;
+        else
+            $lead->status_id = Record::getStatus($record->attendance)['status_id'];
+
         $lead->save();
 
         return $lead;
@@ -128,10 +139,8 @@ class amoCRM
             return null;
     }
 
-    public function updateStatus($model, int $status_id)
+    public function updateStatus($lead, int $status_id)
     {
-        $lead = $this->amoApi->leads()->find($model->lead_id);
-
         $lead->status_id = $status_id;
         $lead->save();
 
@@ -174,30 +183,71 @@ class amoCRM
 
             $lead = $this->searchLead($client, env('FIRST_PIPELINE'));
 
-            if($lead) {
-
-                if($lead->status_id == 142 || $lead->status_id == 143)
-                    //если закрытая в 1 воронке
-                    $lead = $this->createLead($client, $record);//TODO воронка создания?
-
-            } else {
+            if ($lead == null || ($lead->status_id == 142 || $lead->status_id == 143))
 
                 $lead = $this->searchLead($client, env('SECOND_PIPELINE'));
 
-                if($lead->status_id == 142 || $lead->status_id == 143) {
-                    //если закрытая во 2 воронке
-                    $lead = $this->createLead($client, $record);//TODO воронка создания?
-                }
+            if ($lead) {
+
+                if ($lead->status_id == 142 || $lead->status_id == 143)
+                    //если закрытая в 1 воронке
+                    $lead = $this->createLead($client, $record, self::pipelineHelper(env('SECOND_PIPELINE'), $record));
+
+                elseif(Record::where('lead_id', $lead->id)->first())
+
+                    $lead = $this->createLead($client, $record, self::pipelineHelper(env('SECOND_PIPELINE'), $record));
+                else
+                    $lead = $this->updateStatus($lead, self::pipelineHelper($lead->pipeline_id, $record));
             }
 
             if(!$lead)
+                $lead = $this->createLead($client, $record, env('FIRST_PIPELINE'));
 
-                $lead = $this->createLead($client, $record);
-        } else
-
+        } else {
             $lead = $this->amoApi->leads()->find($record->lead_id);
 
+            $lead = $this->updateStatus($lead, self::pipelineHelper($lead->pipeline_id, $record));
+        }
+
         return $lead;
+    }
+
+    public static function pipelineHelper(int $id, Record $record = null)
+    {
+        switch ($id) {
+
+            case env('FIRST_PIPELINE') :
+
+                switch ($record->attendance) {
+
+                    case -1 :
+                        return env('STATUS_CANCEL');
+                    case 0 :
+                        return env('STATUS_WAIT');
+                    case 1 :
+                        return env('STATUS_WAIT');
+                    case 2 :
+                        return env('STATUS_CONFIRM');
+                    default :
+                        return env('STATUS_WAIT');
+                }
+
+            case env('SECOND_PIPELINE') :
+
+                switch ($record->attendance) {
+
+                    case -1 :
+                        return env('STATUS2_CANCEL');
+                    case 0 :
+                        return env('STATUS2_WAIT');
+                    case 1 :
+                        return env('STATUS2_WAIT');
+                    case 2 :
+                        return env('STATUS2_CONFIRM');
+                    default :
+                        return env('STATUS2_WAIT');
+                }
+        }
     }
 
     /**
@@ -217,10 +267,18 @@ class amoCRM
         if($leads) {
             foreach ($leads->toArray() as $arrayLead) {
 
-                if ($arrayLead['pipeline_id'] == $pipeline_id)
+                if ($arrayLead['pipeline_id'] == $pipeline_id) {
 
-                    return $this->amoApi->leads()->find($arrayLead['id']);
+                    if($arrayLead['status_id'] != 142 && $arrayLead['status_id'] != 143)
+
+                        return $this->amoApi->leads()->find($arrayLead['id']);
+
+                    $lead = $this->amoApi->leads()->find($arrayLead['id']);
+                }
             }
+
+            if($lead) return $lead;
+
         } else
             return null;
     }
@@ -262,7 +320,7 @@ class amoCRM
         return implode("\n", $arrayText);
     }
 
-    public function createNoteLead(Record $record, string $event)
+    public function createNoteLead(Record $record)
     {
         $lead = $this->amoApi->leads()->find($record->lead_id);
 
@@ -283,7 +341,7 @@ class amoCRM
             ' - Филиал : '.Record::getFilial($record->company_id),
             ' - Процедуры : '.$record->title,
             ' - Дата и Время : '.$record->datetime,
-            ' - {мастер}',
+            ' - Мастер : '.$record->staff_name,
             ' Комментарий : '.$record->comment,
         ];
 

@@ -22,11 +22,12 @@ class CreateClientsTable extends Migration
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->dateTime('birth_date')->nullable();
-            $table->string('success_visits_count')->nullable();
+            $table->string('visits')->nullable();
             $table->string('spent')->nullable();
             $table->timestamps();
 
             $table->index('company_id');
+            $table->index('phone');
             $table->index('client_id');
             $table->index('contact_id');
         });

@@ -17,6 +17,7 @@ class Record extends Model
         'title',
         'cost',
         'staff_id',
+        'staff_name',
         'client_id',
         'visit_id',
         'datetime',
@@ -24,7 +25,6 @@ class Record extends Model
         'seance_length',
         'attendance',
         'status',
-        'lead_id',
     ];
 
     /*
@@ -99,6 +99,7 @@ class Record extends Model
             'title' => $stringServices,
             'cost' => $costSumm,
             'staff_id' => $arrayRequest['data']['staff_id'],
+            'staff_name' => $arrayRequest['data']['staff']['name'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'visit_id' => $arrayRequest['data']['visit_id'],
             'datetime' => Carbon::parse($arrayRequest['data']['datetime'])->format('Y.m.d H:i:s'),
@@ -124,7 +125,7 @@ class Record extends Model
             case -1 :
                 $status_name = 'did_not_come';
                 $action = 'cancel';
-                $status_id = env('STATUS_CANCEL');
+                $status_id = env('STATUS_CANCEL');//TODO delete?
                 break;
 
             case 0 :
@@ -172,6 +173,10 @@ class Record extends Model
         else
             $record->fill($arrayForRecord);
 
+        $record->save();
+
+        $record = Record::find($arrayForRecord['record_id']);
+
         return $record;
     }
 
@@ -179,7 +184,4 @@ class Record extends Model
     {
         return $this->belongsTo('App\Models\Client', 'client_id', 'client_id');
     }
-    //lead
-    //contact
-    //client
 }

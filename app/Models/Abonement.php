@@ -20,7 +20,7 @@ class Abonement extends Model
         'comment',
         'cost',//без бонусов
         'sale',//бюджет
-        'amount'//остаток на балансе
+        'balance'//остаток на балансе
     ];
 
     public static function getAbonement()
@@ -42,6 +42,7 @@ class Abonement extends Model
             'client_id' => $arrayRequest['data']['client']['id'],
             'comment' => $arrayRequest['data']['comment'],
             'cost' => $arrayRequest['data']['cost'],
+            'balance' => $arrayRequest['data']['cost'],
             'is_active' => 1,
             'sale' => self::getSaleByTitle($arrayRequest['data']['good']['title']),
         ];

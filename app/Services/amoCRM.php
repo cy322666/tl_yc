@@ -99,16 +99,17 @@ class amoCRM
         return $lead;
     }
 
-    public function updateLeadAbonement(Abonement $abonement)
+    public function updateAbonement(Abonement $abonement)
     {
         if($abonement->lead_id) {
 
             $lead = $this->amoApi->leads()->find($abonement->lead_id);
 
-            $lead->sale = $abonement->cost;
+            $lead->sale = $abonement->sale;
 
             $lead->cf('Салон')->setValue(Record::getFilial($abonement->company_id));
-
+            $lead->cf('Фактический баланс')->setValue($abonement->cost);
+            $lead->cf('Остаток на балансе')->setValue($abonement->balance);
 
             $lead->save();
 
@@ -360,6 +361,31 @@ class amoCRM
         $note->save();
 
         return $note;
+    }
+
+    public function createNoteLeadAbonementPay(Abonement $abonement)
+    {
+        $lead = $this->amoApi->leads()->find($abonement->lead_id);
+
+        $note = $lead->createNote($type = 4);
+
+        $note->text = self::createArrayNoteTextAbonementPay($abonement);
+        $note->element_type = 2;
+        $note->element_id = $abonement->lead_id;
+        $note->save();
+
+        return $note;
+    }
+
+    private function createArrayNoteTextAbonementPay(Abonement $abonement)
+    {
+        $arrayText = [
+            ' - Событие : Посещение по абонементу № '.$abonement->abonement_id,
+            ' - Название : '.$abonement->title,
+            ' - Филиал : '.Record::getFilial($abonement->company_id),
+        ];
+
+        return implode("\n", $arrayText);
     }
 
     public function createNoteLeadAbonement(Abonement $abonement)

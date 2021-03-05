@@ -86,12 +86,12 @@ class amoCRM
         $lead = $this->amoApi->leads()->create();
 
         $lead->name = 'Абонемент в YClients';
-        $lead->sale = $abonement->sale;
+        $lead->sale = $abonement->cost;
         $lead->contacts_id = $client->contact_id;
         $lead->status_id = env('STATUS_ABONEMENT');
 
         $lead->cf('Фактический баланс')->setValue($abonement->cost);
-        $lead->cf('Остаток на балансе')->setValue($abonement->cost);
+        $lead->cf('Остаток на балансе')->setValue($abonement->balance);
         $lead->cf('Салон')->setValue(Record::getFilial($abonement->company_id));
 
         $lead->save();

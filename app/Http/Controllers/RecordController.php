@@ -142,3 +142,5 @@ class RecordController extends Controller
     }
     //TODO миддлваря на проверку события
 }
+
+//TODO client id (empty) and staff|name ЛИСТ ОЖИДАНИЯ

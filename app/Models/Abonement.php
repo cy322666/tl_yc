@@ -70,6 +70,14 @@ class Abonement extends Model
         return trim($str_to[0]);
     }
 
+    public static function getCostByTitle(string $title)
+    {
+        $str_at = explode('  ', $title);
+        $str_to = explode('руб.', end($str_at));
+
+        return trim($str_to[0]);
+    }
+
     public function resolveChildRouteBinding($childType, $value, $field)
     {
         // TODO: Implement resolveChildRouteBinding() method.

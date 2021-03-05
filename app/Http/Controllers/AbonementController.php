@@ -25,17 +25,66 @@ class AbonementController extends Controller
             $client->contact_id = $contact->id;
             $client->save();
 
-            $abonement = Abonement::getAbonement();
+            $abonements = YClients::getAbonements($client);
 
-            $lead = $this->amoApi->createAbonement($client, $abonement);
+            if(!empty($abonements['data'][0])) {
 
-            unset($abonement);
-            $abonement = Abonement::find($request['data']['id']);
+                //TODO update contact??
+                foreach ($abonements['data'] as $abonementArray) {
 
-            $abonement->lead_id = $lead->id;
-            $abonement->save();
+                    if ($abonementArray['status']['title'] == 'Активирован' &&
+                        Abonement::checkName($abonementArray['type']['title'])) {
 
-            $this->amoApi->createNoteLeadAbonement($abonement);
+                        $saleFact = Abonement::getCostByTitle($abonementArray['type']['title']);
+
+                        $balance = $abonementArray['balance'] > $saleFact ? $saleFact : $abonementArray['balance'];
+
+                        $arrayFields = [
+                            'company_id' => $client->company_id,
+                            'abonement_id' => $abonementArray['id'],
+                            'title' => $abonementArray['type']['title'],
+                            'client_id' => $client->client_id,
+                            'cost' => $saleFact,
+                            'is_active' => 1,
+                            'balance' => $abonementArray['balance'],
+                            'sale' => $balance,
+                        ];
+                        //TODO cost and sale balanse??
+                        $abonementModel = Abonement::find($abonementArray['id']);
+
+                        if ($abonementModel == null) {
+
+                            $abonementModel = Abonement::create($arrayFields);
+
+                            $abonementLead = $this->amoApi->createAbonement($client, $abonementModel);
+
+                            $abonementModel = Abonement::find($abonementArray['id']);
+
+                            $abonementModel->lead_id = $abonementLead->id;
+                            $abonementModel->save();
+                            //TODO dont save lead_id
+                            //TODO dont save balance in lead
+                        } else {
+
+                            $abonementModel->fill($arrayFields);
+
+                            $abonementLead = $this->amoApi->updateAbonement($abonementModel);
+                        }
+
+                        if ($abonementModel->balance > $abonementArray['balance'])
+
+                            $this->amoApi->createNoteLeadAbonementPay($abonementModel);
+
+                        if ($abonementModel->balance <= 5000)
+
+                            $this->amoApi->updateStatus($abonementLead, env('STATUS_FINISH'));
+                        //TODO status abonement is_active = false?
+
+                        unset($abonementModel);
+                        unset($abonementLead);
+                    }
+                }
+            }
         }
     }
 
@@ -44,10 +93,12 @@ class AbonementController extends Controller
      */
     public function pay()
     {//dd(date('Y-m-d H:i:s', strtotime("-6 hours")));
-        $records = Record::where('status', 'no_pay')
-            ->where('datetime', '>', date('Y-m-d H:i:s', strtotime("-6 hours")))
-            ->where('datetime', '<', date('Y-m-d H:i:s', strtotime("-5 hours")))
-            ->get();
+//        $records = Record::where('status', 'no_pay')
+//            ->where('datetime', '>', date('Y-m-d H:i:s', strtotime("-6 hours")))
+//            ->where('datetime', '<', date('Y-m-d H:i:s', strtotime("-5 hours")))
+//            ->get();
+
+        $records = Record::all();
 
         if($records) {
 
@@ -65,16 +116,21 @@ class AbonementController extends Controller
                         if ($abonementArray['status']['title'] == 'Активирован' &&
                             Abonement::checkName($abonementArray['type']['title'])) {
 
+                            $saleFact = Abonement::getCostByTitle($abonementArray['type']['title']);
+
+                            $balance = $abonementArray['balance'] > $saleFact ? $saleFact : $abonementArray['balance'];
+
                             $arrayFields = [
                                 'company_id' => $record->company_id,
                                 'abonement_id' => $abonementArray['id'],
                                 'title' => $abonementArray['type']['title'],
                                 'client_id' => $client->client_id,
-                                'cost' => $abonementArray['default_balance'],
+                                'cost' => $saleFact,
+                                'is_active' => 1,
                                 'balance' => $abonementArray['balance'],
-                                'sale' => Abonement::getSaleByTitle($abonementArray['type']['title']),
+                                'sale' => $balance,
                             ];
-
+                            //TODO cost and sale balanse??
                             $abonementModel = Abonement::find($abonementArray['id']);
 
                             if ($abonementModel == null) {
@@ -82,6 +138,8 @@ class AbonementController extends Controller
                                 $abonementModel = Abonement::create($arrayFields);
 
                                 $abonementLead = $this->amoApi->createAbonement($client, $abonementModel);
+
+                                $abonementModel = Abonement::find($abonementArray['id']);
 
                                 $abonementModel->lead_id = $abonementLead->id;
                                 $abonementModel->save();
@@ -97,12 +155,17 @@ class AbonementController extends Controller
                             if ($abonementModel->balance > $abonementArray['balance'])
 
                                 $this->amoApi->createNoteLeadAbonementPay($abonementModel);
-                            //TODO не подходит примечаниe
 
                             if ($abonementModel->balance <= 5000)
 
                                 $this->amoApi->updateStatus($abonementLead, env('STATUS_FINISH'));
                             //TODO status abonement is_active = false?
+
+                            $record->status = 'payed';
+                            $record->save();
+
+                            unset($abonementModel);
+                            unset($abonementLead);
                         }
                     }
                 }

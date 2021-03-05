@@ -30,3 +30,9 @@ class TransactionController extends Controller
         }
     }
 }
+
+//TODO data|account|title //ФОНД ВЫПЛАТ и тл, Расчетный счет и Основная касса
+//TODO в массиве нет инфы об записи операции
+//TODO пополнение счета? шо за фрукт
+//TODO update status wtf??
+//TODO data|expense|title : Оказание услуг

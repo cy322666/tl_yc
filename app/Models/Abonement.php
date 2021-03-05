@@ -15,6 +15,8 @@ class Abonement extends Model
         'title',
         'cost',
         'client_id',
+        'is_active',
+        'lead_id',
         'comment',
         'cost',//без бонусов
         'sale',//бюджет
@@ -23,9 +25,9 @@ class Abonement extends Model
 
     public static function getAbonement()
     {
-        $arrayForClient = self::buildArrayForModel(Request::capture()->toArray());
+        $arrayForAbonement = self::buildArrayForModel(Request::capture()->toArray());
 
-        $abonement = Abonement::create($arrayForClient);
+        $abonement = self::create($arrayForAbonement);
 
         return $abonement;
     }
@@ -35,11 +37,12 @@ class Abonement extends Model
         $arrayForModel = [
             'record_id'  => $arrayRequest['data']['record_id'],
             'company_id' => $arrayRequest['company_id'],
-            'abonement_id' => $arrayRequest['data']['good']['id'],
+            'abonement_id' => $arrayRequest['data']['id'],
             'title' => $arrayRequest['data']['good']['title'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'comment' => $arrayRequest['data']['comment'],
             'cost' => $arrayRequest['data']['cost'],
+            'is_active' => 1,
             'sale' => self::getSaleByTitle($arrayRequest['data']['good']['title']),
         ];
 

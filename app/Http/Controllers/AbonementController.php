@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Log;
 
 class AbonementController extends Controller
 {
-    //TODO миддлваря на проверку продажи абона/наличие буковок
     public function create(Request $request)
     {
         $request = $request::capture()->toArray();
@@ -24,36 +23,20 @@ class AbonementController extends Controller
             $contact = $this->amoApi->updateOrCreate($client);
 
             $client->contact_id = $contact->id;
+            $client->save();
 
-            /*
-             *
-             *
-             *
-             */
             $abonement = Abonement::getAbonement();
 
             $lead = $this->amoApi->createAbonement($client, $abonement);
 
+            unset($abonement);
+            $abonement = Abonement::find($request['data']['id']);
+
             $abonement->lead_id = $lead->id;
-            //TODO not save lead_id
-            //TODO abonement in note no valid
             $abonement->save();
-            $client->save();
 
             $this->amoApi->createNoteLeadAbonement($abonement);
         }
-
-
-            /*
-             * При создании сделки с покупкой абонемента нам важно передавать следующие данные:
-Стоимость операции (покупки)  → тянем в поле “бюджет сделки”
-Информация по фактическому балансу после покупки ( берем из title) → Тянем в поле “Фактический баланс” (id 1104351)
-
-            Также в сделке есть поле “Остаток на балансе” (id 1173769) это поле нужно сделать калькулируемым автоматически по следующей логике:
-Начальное значение = полю “Фактический баланс”
-Далее, при обновлении фактического баланса абонемента на стороне yc мы должны автоматически обновлять и данное поле.
-
-             */
     }
 
     /**
@@ -73,7 +56,7 @@ class AbonementController extends Controller
                 $client = $record->client;
 
                 $abonements = YClients::getAbonements($client);
-
+dd($abonements);
                 if(!empty($abonements['data'][0])) {
                     //TODO add field code (number)
                     //TODO update contact??

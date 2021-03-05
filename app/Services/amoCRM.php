@@ -225,7 +225,7 @@ class amoCRM
                     case 0 :
                         return env('STATUS_WAIT');
                     case 1 :
-                        return env('STATUS_WAIT');
+                        return env('STATUS_CAME');
                     case 2 :
                         return env('STATUS_CONFIRM');
                     default :
@@ -241,7 +241,7 @@ class amoCRM
                     case 0 :
                         return env('STATUS2_WAIT');
                     case 1 :
-                        return env('STATUS2_WAIT');
+                        return env('STATUS2_CAME');
                     case 2 :
                         return env('STATUS2_CONFIRM');
                     default :

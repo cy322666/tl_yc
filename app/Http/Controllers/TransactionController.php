@@ -16,12 +16,17 @@ class TransactionController extends Controller
 
         if($record) {
 
-            $this->amoApi->updateStatus($record, env('STATUS_CAME'));
+            if($record->lead_id) {
 
-            $this->amoApi->createNoteLeadTransaction($transaction, $record);
+                $lead = $this->amoApi->getLead($record->lead_id);
 
-            $record->status = 'payed';
-            $record->save();
+                $this->amoApi->updateStatus($lead, intval($this->amoApi::pipelineHelper($lead->pipeline_id, $record)));
+
+                $this->amoApi->createNoteLeadTransaction($transaction, $record);
+
+                $record->status = 'payed';
+                $record->save();
+            }
         }
     }
 }

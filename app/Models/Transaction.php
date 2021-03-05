@@ -14,14 +14,25 @@ class Transaction extends Model
         'client_id',
         'visit_id',
         'record_id',
+        'transaction_id',
         'comment',
     ];
 
     public static function getTransaction()
     {
-        $arrayForRecord = self::buildArrayForModel(Request::capture()->toArray());
+        $request = Request::capture()->toArray();
 
-        $transaction = Transaction::create($arrayForRecord);
+        if($request['data']['record_id'] != 0) {
+
+            $arrayForRecord = self::buildArrayForModel($request);
+
+            $transaction = Transaction::create($arrayForRecord);
+
+            $record = $transaction->record;
+
+            $record->attendance = 1;
+            $record->save();
+        }
 
         return $transaction;
     }
@@ -29,7 +40,8 @@ class Transaction extends Model
     public static function buildArrayForModel($arrayRequest)
     {
         $arrayForModel = [
-            'record_id'  => $arrayRequest['resource_id'],//TODO transaction_id
+            'record_id'  => $arrayRequest['data']['record_id'],
+            'transaction_id'  => $arrayRequest['data']['id'],
             'company_id' => $arrayRequest['company_id'],
             'client_id' => $arrayRequest['data']['client']['id'],
             'visit_id' => $arrayRequest['data']['visit_id'],
